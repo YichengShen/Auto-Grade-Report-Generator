@@ -13,6 +13,7 @@ def process_data(all_groups):
 
 def main():
     """run this"""
+    HW_number = 1
     file_io = 'test_data.txt'
     contents = read_file(file_io)
     process_data(contents)
