@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import os
+import win32com.client
+from pywintypes import com_error
 
 
 def read_file(io, index):
@@ -19,12 +22,58 @@ def process_data(data, q_num_list):
     #append correct questions
     for each in q_num_list:
         if each not in np.array(grades_df["Question Number"]):
-             a = [[each, '0']]
-             grades_df = grades_df.append({'Question Number' : each , 'Deduction in points' : 0} , ignore_index=True)
+             grades_df = grades_df.append({'Question Number' : each , 'Deduction in points' : '0'} , ignore_index=True)
     #sort according to question number
     grades_df = grades_df.sort_values(by = 'Question Number')
-    return grades_df
+    return group_num, grades_df
 
+
+def make_dir(hw_num):
+    #make a folder on Desktop
+    dir = "hw{}".format(hw_num)
+    parent_dir = os.path.join(os.environ["HOMEPATH"], "desktop")
+    path = os.path.join(parent_dir, dir)
+    os.mkdir(path)
+    print("Directory '% s' created" % dir)
+    return path
+
+
+def to_excel(df, path, hw_num, group_number):
+    # export to excel
+    print("Exporting to Excel...")
+    excel_name = "HW{}_{}_report.xlsx".format(hw_num, group_number)
+    excel_path = os.path.join(path, excel_name)
+    df.to_excel(excel_path, sheet_name='Details about deduction')
+    return excel_path
+
+
+def to_pdf(path, excel_path, hw_num, group_number):
+    # Path to original excel file
+    WB_PATH = excel_path
+
+    pdf_name = "HW{}_{}_report.xlsx".format(hw_num, group_number)
+    # PDF path when saving
+    PATH_TO_PDF = os.path.join(path, pdf_name)
+
+    excel = win32com.client.Dispatch("Excel.Application")
+    excel.Visible = False
+
+    try:
+        print('Start conversion to PDF')
+        # Open
+        wb = excel.Workbooks.Open(WB_PATH)
+        # Specify the sheet you want to save by index. 1 is the first (leftmost) sheet.
+        ws_index_list = [1]
+        wb.WorkSheets(ws_index_list).Select()
+        # Save
+        wb.ActiveSheet.ExportAsFixedFormat(0, PATH_TO_PDF)
+    except com_error as e:
+        print('failed.')
+    else:
+        print('Succeeded.')
+    finally:
+        wb.Close()
+        excel.Quit()
 
 def main():
     """run this"""
@@ -33,13 +82,15 @@ def main():
     file_io = 'test_data.txt'
 
 
+    path = make_dir(HW_number)
     count = len(open(file_io).readlines()) # get the number of groups
     for num in range(count):
         print("Reading grades of group No.{}...".format(num+1))
         contents = read_file(file_io,num)
         print("Preparing dataframe...")
-        df = process_data(contents, all_questions_list)
-        print(df)
+        g_num, df = process_data(contents, all_questions_list)
+        path_excel = to_excel(df, path, HW_number, g_num)
+        to_pdf(path, path_excel, HW_number, g_num)
     return
 
 
