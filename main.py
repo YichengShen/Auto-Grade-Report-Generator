@@ -34,7 +34,16 @@ def process_data(data, q_num_list):
     grades_df = grades_df.sort_values(by = 'Question Number')
     # Delete the default index
     grades_df.set_index('Question Number', inplace=True)
+    # change deduction of points from str to float
+    grades_df['Deduction in points'] = pd.to_numeric(grades_df['Deduction in points'],errors='coerce')
     return group_num, grades_df
+
+
+def add_title_and_sum(grades_df, group_num, hw_num, full_score):
+    title = "HW{} {}".format(hw_num, group_num.title())
+    total_deduction = grades_df['Deduction in points'].sum()
+    final_score = full_score + total_deduction
+    return grades_df
 
 
 def make_dir(hw_num):
@@ -51,7 +60,6 @@ def make_dir(hw_num):
 
 def export_to_excel(df, path, hw_num, group_number):
     # export to excel
-    df['Deduction in points'] = pd.to_numeric(df['Deduction in points'],errors='coerce')
     print("Exporting to Excel...")
     excel_name = "HW{}_{}_report.xlsx".format(hw_num, group_number)
     excel_path = os.path.join(path, excel_name)
@@ -64,9 +72,18 @@ def export_to_excel(df, path, hw_num, group_number):
                                       'font_color': '#9C0006'})
     format_green = workbook.add_format({'bg_color': '#C6EFCE',
                                         'font_color': '#006100'})
-    worksheet1.set_column('A:A', 15)
-    worksheet1.set_column('B:B', 17)
-    worksheet1.set_column('C:C', 55)
+    format_q_num = workbook.add_format({'valign': 'vcenter',
+                                        'bold': False})
+    format_point = workbook.add_format({'valign': 'vcenter',
+                                        'align' : 'center',
+                                        'bottom': True})
+    format_comment = workbook.add_format({'text_wrap': True,
+                                          'bottom': True,
+                                          'right': True,
+                                          'left': True})
+    worksheet1.set_column('A:A', 18, format_q_num)
+    worksheet1.set_column('B:B', 19, format_point)
+    worksheet1.set_column('C:C', 50, format_comment)
     worksheet1.conditional_format('B2:B200', {'type': 'cell',
                                         'criteria': '<',
                                         'value': 0,
@@ -110,6 +127,7 @@ def to_pdf(path, excel_path, hw_num, group_number):
 def main():
     """run this"""
     HW_number = 1
+    full_score = 37
     all_questions_list = ['1a','1b','1c','1d','2','3','4','5']
     file_io = 'test_data.txt'
 
@@ -121,10 +139,10 @@ def main():
         contents = read_file(file_io,num)
         print("Preparing dataframe...")
         g_num, df = process_data(contents, all_questions_list)
+        df = add_title_and_sum(df, g_num, HW_number, full_score)
         path_excel = export_to_excel(df, path_excel_folder, HW_number, g_num)
         to_pdf(path, path_excel, HW_number, g_num)
     return
-
 
 
 main()

@@ -1,3 +1,1 @@
-group 1, 1a,-1, 1b,-1, 1c,-1, 2,-2, 3,-0.5, 5,-3
-group 2, 2,-3, 3,-0.5, 5,-1
-group 3, 3,-1
+group 1, 1a,-1 ,a long comment a long comment a long comment a long comment a long comment a long comment,1b,-1 ,something wrong, 1c ,- 1,something wrong,2,-2,something wrong,3,-0.5,something wrong,5,-3,something wrong
