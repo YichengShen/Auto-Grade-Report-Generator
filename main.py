@@ -58,7 +58,7 @@ def export_to_excel(df, path, hw_num, group_number):
                                       'font_color': '#9C0006'})
     format_green = workbook.add_format({'bg_color': '#C6EFCE',
                                         'font_color': '#006100'})
-    worksheet1.set_column('A:A', 18)
+    worksheet1.set_column('A:A', 20)
     worksheet1.set_column('B:B', 20)
     worksheet1.conditional_format('B2:B200', {'type': 'cell',
                                         'criteria': '<',
