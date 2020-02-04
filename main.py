@@ -3,6 +3,7 @@ import numpy as np
 import os
 import win32com.client
 from pywintypes import com_error
+import xlsxwriter
 
 
 def read_file(io, index):
@@ -25,6 +26,8 @@ def process_data(data, q_num_list):
              grades_df = grades_df.append({'Question Number' : each , 'Deduction in points' : '0'} , ignore_index=True)
     #sort according to question number
     grades_df = grades_df.sort_values(by = 'Question Number')
+    # Delete the default index
+    grades_df.set_index('Question Number', inplace=True)
     return group_num, grades_df
 
 
@@ -34,16 +37,38 @@ def make_dir(hw_num):
     parent_dir = os.path.join(os.environ["HOMEPATH"], "desktop")
     path = os.path.join(parent_dir, dir)
     os.mkdir(path)
+    path_excel_folder = os.path.join(path,"Excel")
+    os.mkdir(path_excel_folder)
     print("Directory '% s' created" % dir)
-    return path
+    return path, path_excel_folder
 
 
-def to_excel(df, path, hw_num, group_number):
+def export_to_excel(df, path, hw_num, group_number):
     # export to excel
+    df['Deduction in points'] = pd.to_numeric(df['Deduction in points'],errors='coerce')
     print("Exporting to Excel...")
     excel_name = "HW{}_{}_report.xlsx".format(hw_num, group_number)
     excel_path = os.path.join(path, excel_name)
-    df.to_excel(excel_path, sheet_name='Details about deduction')
+    writer = pd.ExcelWriter(excel_path, engine='xlsxwriter')
+    df.to_excel(writer, sheet_name='Detailed Report')
+    workbook  = writer.book
+    worksheet1 = writer.sheets['Detailed Report']
+    format1 = workbook.add_format({'num_format': '#,##0.00'})
+    format_red = workbook.add_format({'bg_color': '#FFC7CE',
+                                      'font_color': '#9C0006'})
+    format_green = workbook.add_format({'bg_color': '#C6EFCE',
+                                        'font_color': '#006100'})
+    worksheet1.set_column('A:A', 18)
+    worksheet1.set_column('B:B', 20)
+    worksheet1.conditional_format('B2:B200', {'type': 'cell',
+                                        'criteria': '<',
+                                        'value': 0,
+                                        'format': format_red})
+    worksheet1.conditional_format('B2:B200', {'type': 'cell',
+                                        'criteria': '=',
+                                        'value': 0,
+                                        'format': format_green})
+    writer.save()
     return excel_path
 
 
@@ -51,7 +76,7 @@ def to_pdf(path, excel_path, hw_num, group_number):
     # Path to original excel file
     WB_PATH = excel_path
 
-    pdf_name = "HW{}_{}_report.xlsx".format(hw_num, group_number)
+    pdf_name = "HW{}_{}_report".format(hw_num, group_number)
     # PDF path when saving
     PATH_TO_PDF = os.path.join(path, pdf_name)
 
@@ -82,14 +107,14 @@ def main():
     file_io = 'test_data.txt'
 
 
-    path = make_dir(HW_number)
+    path, path_excel_folder = make_dir(HW_number)
     count = len(open(file_io).readlines()) # get the number of groups
     for num in range(count):
         print("Reading grades of group No.{}...".format(num+1))
         contents = read_file(file_io,num)
         print("Preparing dataframe...")
         g_num, df = process_data(contents, all_questions_list)
-        path_excel = to_excel(df, path, HW_number, g_num)
+        path_excel = export_to_excel(df, path_excel_folder, HW_number, g_num)
         to_pdf(path, path_excel, HW_number, g_num)
     return
 
