@@ -13,18 +13,24 @@ def read_file(io, index):
     return contents
 
 def process_data(data, q_num_list):
-    data = data.replace(" ","") # strip all whitespaces
     list_mixed = data[:-1].split(",") #from 0 to -1 takes out the \n
-    group_num = list_mixed[0]
+    group_num = list_mixed[0].strip()
     grades_array = np.array(list_mixed[1:])
-    grades_array_2d = np.reshape(grades_array, (-1, 2))
-    grades_df = pd.DataFrame(grades_array_2d, columns=['Question Number', 'Deduction in points'])
-
-    #append correct questions
+    grades_array_2d = np.reshape(grades_array, (-1, 3))
+    grades_df = pd.DataFrame(grades_array_2d, columns=['Question Number',
+                                                      'Deduction in points',
+                                                      'Comments'])
+    # Strip all the spaces in first two attributes
+    for index in range(len(grades_df)):
+        grades_df['Question Number'][index] = grades_df['Question Number'][index].replace(" ","")
+        grades_df['Deduction in points'][index] = grades_df['Deduction in points'][index].replace(" ","")
+    # Append correct questions
     for each in q_num_list:
         if each not in np.array(grades_df["Question Number"]):
-             grades_df = grades_df.append({'Question Number' : each , 'Deduction in points' : '0'} , ignore_index=True)
-    #sort according to question number
+             grades_df = grades_df.append({'Question Number' : each ,
+                                           'Deduction in points' : '0',
+                                           'Comments': ''} , ignore_index=True)
+    # Sort according to question number
     grades_df = grades_df.sort_values(by = 'Question Number')
     # Delete the default index
     grades_df.set_index('Question Number', inplace=True)
@@ -58,8 +64,9 @@ def export_to_excel(df, path, hw_num, group_number):
                                       'font_color': '#9C0006'})
     format_green = workbook.add_format({'bg_color': '#C6EFCE',
                                         'font_color': '#006100'})
-    worksheet1.set_column('A:A', 20)
-    worksheet1.set_column('B:B', 20)
+    worksheet1.set_column('A:A', 15)
+    worksheet1.set_column('B:B', 17)
+    worksheet1.set_column('C:C', 55)
     worksheet1.conditional_format('B2:B200', {'type': 'cell',
                                         'criteria': '<',
                                         'value': 0,
